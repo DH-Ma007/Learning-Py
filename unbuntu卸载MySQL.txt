@@ -1,0 +1,8 @@
+参考下面方法
+sudo rm /var/lib/mysql/ -R
+删除mysql的数据文件
+sudo rm /etc/mysql/ -R
+删除mqsql的配置文件
+sudo apt-get autoremove mysql* --purge
+sudo apt-get remove apparmor
+自动卸载mysql的程序

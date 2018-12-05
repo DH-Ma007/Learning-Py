@@ -1,0 +1,48 @@
+import json
+import os
+import uuid
+from django.http import HttpResponse, StreamingHttpResponse
+
+def attachment_upload(request):
+    """文件上传"""
+    ret = {"status": False, "data": {"path": "", "name": ""}, "summary": ""}
+    target ="media/upload/avatar" # 文件保存路径
+    try:
+        # 获取文件对象
+        file_obj = request.FILES.get("file")
+        raw_name = file_obj.name
+        if not file_obj:
+            pass
+        else:
+            # 检查目录存不存在,如果不存在新建一个
+            if not os.path.exists(os.path.dirname(target)):
+                os.makedirs(target)
+            file_name = str(uuid.uuid4())
+            file_path = os.path.join(target, file_name)
+            with open(file_path, "wb") as f:
+                for chunk in file_obj.chunks(): # chuck是分块写入文件 （.chunks()上循环而不是用read()保证大文件不会大量使用你的系统内存。）
+                    f.write(chunk)
+            ret["status"] = True
+            ret["data"]['path'] = file_path
+            ret["data"]['name'] = raw_name
+    except Exception as e:
+        ret["summary"] = str(e)
+    return HttpResponse(json.dumps(ret))
+
+
+def attachment_download(request):
+     """文件下载"""
+    name = request.GET.get("name", None)
+    file_path = request.GET['url']
+    def file_iterator(file_path, chunk_size=512):
+        with open(file_path, 'rb') as f:
+            while True:
+                c = f.read(chunk_size)
+                if c:
+                    yield c
+                else:
+                    break
+    response = StreamingHttpResponse(file_iterator(file_path))
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = 'attachment;filename="{0}"'.format(name.encode('utf-8').decode('ISO-8859-1'))
+    return response
